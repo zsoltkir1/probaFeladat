@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Person = require('../models/Person');
-const Adress = require('../models/Adress');
+const Address = require('../models/Address');
 
 router.get('/', async (req,res) => {
     try{
@@ -12,8 +12,8 @@ router.get('/', async (req,res) => {
     }
 });
 
-router.get('/:email', async (req,res) => {
-    const person = await Person.findOne({ email: req.params.email });
+router.get('/:id', async (req,res) => {
+    const person = await Person.findById(req.params.id);
         try{
             res.json(person);
         }catch(err){
@@ -21,18 +21,18 @@ router.get('/:email', async (req,res) => {
         }
     });
 
-router.delete('/:email', async (req,res) => {
+router.delete('/:id', async (req,res) => {
         try{
-            const person = await Person.deleteOne({ email: req.params.email });
+            const person = await Person.deleteOne({ _id: req.params.id });
             res.json(person);
         }catch(err){
             res.json({message:err});
         }
     });
 
-router.patch('/:email', async (req,res) => {
+router.patch('/:id', async (req,res) => {
     try{
-        const person = await Person.updateOne({ email: req.params.email },
+        const person = await Person.updateOne({ _id: req.params.id },
         { $set: { name: req.body.name, email: req.body.email } });
         res.json(person);
     }catch(err){
@@ -40,7 +40,7 @@ router.patch('/:email', async (req,res) => {
     }
 });
 
-router.post('/newperson', (req,res) => {
+router.put('/', (req,res) => {
     const person = new Person({
         name: req.body.name,
         email: req.body.email
@@ -55,29 +55,28 @@ router.post('/newperson', (req,res) => {
     });
 });
 
-router.post('/newadress/:email', (req,res) => {
-
-    const query = Person.findOne({ email: req.params.email });
+router.put('/:id/newaddress', (req,res) => {
+    console.log("start adding new address");
+    const query = Person.findById(req.params.id);
     if(query !== null){
-    const adress = new Adress({
+    const address = new Address({
         country: req.body.country,
         city: req.body.city,
         street: req.body.street,
         street_number: req.body.street_number
     });
 
-    adress.save()
+    address.save()
     .then(data => {
-
 
         query.exec(function (err, person) {
             if (err) {
                 return;
             }
-            if (person.adresses==undefined){
-                person.adresses = [data._id];
+            if (person.addresses==undefined){
+                person.addresses = [data._id];
             }else{
-                person.adresses.push(data._id);
+                person.addresses.push(data._id);
             }
             person.save().then(data => {
                 res.json(data);
@@ -94,32 +93,36 @@ router.post('/newadress/:email', (req,res) => {
     });
     }
     else{
-        res.send('email adress not found');
+        res.send('email address not found');
     };
     
 });
 
-function idmegtalal(email){
-    var adressIdArray=[];
-    Person.findOne({ email: email },function (err, person){
-            adressIdArray=person.adresses;
-            console.log(adressIdArray);
-    });
-    return adressIdArray;
-}
-
-router.get('/adresses/:email', (req,res) => {
-    var adressIdArray=idmegtalal(req.params.email);// idáig eljut
-    console.log("ideeljut"); //ide nem jut el
-    console.log(adressIdArray);
-    var adressArray=[];
-    adressIdArray.forEach(function(value,index){
-        Adress.findById(value).exec(function (err, adress){
-            adressArray.push(adress);
-        });
-        });    
-    res.json(adressArray);
+router.get('/:id/addresses', async (req,res) => {
+    var addressIdArray=[];
+    const person = await Person.findById(req.params.id);
+    console.log(person);
+    const addresses = person.addresses.forEach(async function (value){
+        addressIdArray.push(await Address.findById(value));
+    })
+    setTimeout( () => {
+        res.json(addressIdArray);
+    }, 500);
+    
 });
 
+router.get('/:id/addresses/:addressId', async (req,res) => {
+    var addressIdArray=[];
+    const person = await Person.findById(req.params.id);
+    console.log(person);
+    const addresses = person.addresses.forEach(async function (value){
+        addressIdArray.push(await Address.findById(value));
+    })
+    setTimeout( async () => {
+        const address = await Address.findById(req.params.addressId);
+        res.json(address);
+    }, 500);
+    
+});
 
 module.exports = router;

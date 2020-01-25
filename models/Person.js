@@ -10,7 +10,7 @@ const PersonSchema = mongoose.Schema({
         required: true,
         unique : true
     },
-    adresses: {
+    addresses: {
         type: Array,
         default: []
     }
